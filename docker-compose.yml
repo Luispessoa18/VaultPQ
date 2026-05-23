@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=vault_user
+      - DB_PASS=vault_pass
+      - DB_NAME=securevault
+      - MASTER_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      - PASSWORD_PEPPER=pimenta_super_secreta_hsm_simulada_998877
+      - API_KEY=sk_test_123456789
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: vault_user
+      POSTGRES_PASSWORD: vault_pass
+      POSTGRES_DB: securevault
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vault_user -d securevault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
